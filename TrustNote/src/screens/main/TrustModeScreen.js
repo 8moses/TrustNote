@@ -1,5 +1,3 @@
-// src/screens/main/TrustModeScreen.js
-
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import Header from '../../components/common/Header';
@@ -9,17 +7,19 @@ import Button from '../../components/common/Button';
 const TrustModeScreen = ({ navigation }) => {
   // These functions will handle what happens when you press the header icons
   const handleAddFriend = () => {
-    console.log('Navigate to Add Friend screen');
-    // Example: navigation.navigate('AddFriendScreen');
+    // --- THIS IS THE CHANGE ---
+    // This will navigate to the screen for adding new friends.
+    navigation.navigate('AddFriend');
   };
 
   const handleOpenMenu = () => {
-    console.log('Open settings menu');
-    // Example: navigation.navigate('Settings');
+    // This can now navigate to your actual Settings screen
+    navigation.navigate('Settings');
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* This Header's buttons will now trigger navigation */}
       <Header onLeftPress={handleAddFriend} onRightPress={handleOpenMenu} />
       
       <View style={styles.content}>

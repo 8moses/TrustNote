@@ -1,9 +1,9 @@
-// src/screens/main/HomeScreen.js
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
+// --- FIX #1: Import the useFocusEffect hook ---
+import { useFocusEffect } from '@react-navigation/native';
 
 import { getPendingFriendRequestCount } from '../../services/firebase/firestore';
 import { fetchThoughts } from '../../store/slices/socialSlice';
@@ -18,12 +18,17 @@ const HomeScreen = ({ navigation }) => {
   
   const [friendRequestCount, setFriendRequestCount] = useState(0);
 
+  // --- FIX #2: Use useFocusEffect to refetch the count whenever the screen is focused ---
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.uid) {
+        getPendingFriendRequestCount(user.uid).then(setFriendRequestCount);
+      }
+    }, [user])
+  );
+
+  // This useEffect can now be dedicated to fetching thoughts
   useEffect(() => {
-    // Fetch friend request count
-    if (user?.uid) {
-      getPendingFriendRequestCount(user.uid).then(setFriendRequestCount);
-    }
-    // Fetch thoughts for the horizontal feed
     if (user?.uid && status === 'idle') {
         dispatch(fetchThoughts(user.uid));
     }
@@ -39,17 +44,19 @@ const HomeScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <ScrollView>
         <View style={styles.content}>
-          {/* --- THIS LINE HAS BEEN UPDATED --- */}
           <Text style={styles.greeting}>Hey, {profile?.displayName || 'friend'}!</Text>
           <Text style={styles.subGreeting}>Here's what's new.</Text>
 
-          {/* Social Status Snippets */}
           <View style={styles.statusContainer}>
-            <View style={styles.statusCard}>
+            <TouchableOpacity 
+              style={styles.statusCard}
+              onPress={() => navigation.navigate('FriendRequests')}
+            >
               <Ionicons name="people-circle-outline" size={32} color="#ADD8E6" />
               <Text style={styles.statusNumber}>{friendRequestCount}</Text>
               <Text style={styles.statusText}>Friend Requests</Text>
-            </View>
+            </TouchableOpacity>
+
             <View style={styles.statusCard}>
               <Ionicons name="help-circle-outline" size={32} color="#bfff7b" />
               <Text style={styles.statusNumber}>1</Text>
@@ -57,14 +64,13 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </View>
           
-          {/* Latest Thoughts Section */}
           <View style={styles.feedSection}>
             <Text style={styles.sectionTitle}>Latest Thoughts</Text>
             {status === 'loading' ? (
               <ActivityIndicator color="#FFFFE0" style={{marginTop: 20}}/>
             ) : (
               <FlatList
-                data={thoughts.slice(0, 5)} // Show the first 5 notes
+                data={thoughts.slice(0, 5)}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => <StickyNote note={item} />}
                 horizontal
@@ -74,14 +80,13 @@ const HomeScreen = ({ navigation }) => {
             )}
           </View>
 
-          {/* Call to Action */}
           <View style={styles.ctaContainer}>
-             <Button
+              <Button
                 title="Play Trust Mode"
                 onPress={() => navigation.navigate('Trust Mode')}
                 style={styles.ctaButton}
                 textStyle={styles.ctaButtonText}
-            />
+              />
           </View>
         </View>
       </ScrollView>

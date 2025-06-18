@@ -2,43 +2,36 @@
 
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Import the screens we need for the tabs
+// Import all our real screens
 import HomeScreen from '../screens/main/HomeScreen';
 import TrustModeScreen from '../screens/main/TrustModeScreen';
-// NOTE: ThoughtsWallScreen is no longer imported here
+import ProfileScreen from '../screens/settings/ProfileScreen';
+// --- 1. Import the new SettingsScreen ---
+import SettingsScreen from '../screens/settings/SettingsScreen';
 
 const Tab = createBottomTabNavigator();
 
-// Placeholder for screens we haven't built yet
-const PlaceholderScreen = ({ route }) => (
-    <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#121212'}}>
-        <Text style={{color: 'white', fontSize: 24, fontFamily: 'PressStart2P'}}>{route.name}</Text>
-    </View>
-);
+// PlaceholderScreen is no longer needed.
 
 const MainNavigator = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       headerShown: false,
-      tabBarStyle: { 
-        backgroundColor: '#1c1c1c', 
-        borderTopColor: '#333' 
-      },
+      tabBarStyle: { backgroundColor: '#1c1c1c', borderTopColor: '#333' },
       tabBarActiveTintColor: 'white',
       tabBarInactiveTintColor: 'gray',
       tabBarShowLabel: false,
       tabBarIcon: ({ focused, color, size }) => {
         let iconName;
         
-        if (route.name === 'Profile') {
-          iconName = focused ? 'person-circle' : 'person-circle-outline';
-        } else if (route.name === 'Home') {
+        if (route.name === 'Home') {
           iconName = focused ? 'home' : 'home-outline';
         } else if (route.name === 'Trust Mode') {
           iconName = focused ? 'game-controller' : 'game-controller-outline';
+        } else if (route.name === 'Profile') {
+          iconName = focused ? 'person-circle' : 'person-circle-outline';
         } else if (route.name === 'Settings') {
           iconName = focused ? 'settings' : 'settings-outline';
         }
@@ -47,10 +40,14 @@ const MainNavigator = () => (
       },
     })}
   >
-    <Tab.Screen name="Profile" component={PlaceholderScreen} />
+    {/* The order of your tabs */}
     <Tab.Screen name="Home" component={HomeScreen} />
     <Tab.Screen name="Trust Mode" component={TrustModeScreen} />
-    <Tab.Screen name="Settings" component={PlaceholderScreen} />
+
+    {/* --- 2. Use the real SettingsScreen component for the 'Settings' tab --- */}
+    <Tab.Screen name="Settings" component={SettingsScreen} />
+    
+    <Tab.Screen name="Profile" component={ProfileScreen} />
   </Tab.Navigator>
 );
 
