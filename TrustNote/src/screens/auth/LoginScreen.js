@@ -1,17 +1,18 @@
-// src/screens/auth/LoginScreen.js
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Alert, StyleSheet, Text, SafeAreaView, Dimensions, TextInput, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useDispatch } from 'react-redux';
 
 import { signInUser } from '../../services/firebase/auth';
-import { getUserProfile } from '../../services/firebase/firestore';
+// --- Import the new function and the original getUserProfile ---
+import { getUserProfile, getUserByUsername } from '../../services/firebase/firestore';
 import { setAuthUser, setUserProfile } from '../../store/slices/authSlice';
 
 const { width } = Dimensions.get('window');
 
 const LoginScreen = ({ navigation }) => {
-  const [email, setEmail] = useState('');
+  // --- 1. Rename 'email' state to be more descriptive ---
+  const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -23,36 +24,47 @@ const LoginScreen = ({ navigation }) => {
   }, []);
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password.');
+    // --- 2. Update the validation check ---
+    if (!usernameOrEmail || !password) {
+      Alert.alert('Error', 'Please enter your username/email and password.');
       return;
     }
     setLoading(true);
     try {
-      const userCredential = await signInUser(email, password);
+      let finalEmail = usernameOrEmail.toLowerCase();
+      const isEmail = usernameOrEmail.includes('@');
+
+      // --- 3. Implement the core logic ---
+      if (!isEmail) {
+        // If it's not an email, it must be a username. Let's find their email.
+        const userByUsername = await getUserByUsername(usernameOrEmail);
+        if (userByUsername) {
+          finalEmail = userByUsername.email;
+        } else {
+          // If we can't find a user with that username, we throw an error.
+          throw new Error("User not found.");
+        }
+      }
+
+      // 4. Proceed with the sign-in using the determined email
+      const userCredential = await signInUser(finalEmail, password);
       const authUser = userCredential.user;
 
       if (authUser) {
         const userProfile = await getUserProfile(authUser.uid);
-
-        // --- THIS IS THE FIX ---
-        // Instead of passing the whole authUser object, we pass a simple object with just the uid.
         dispatch(setAuthUser({ uid: authUser.uid })); 
-        // -----------------------
-        
         dispatch(setUserProfile(userProfile));
       } else {
         throw new Error("Could not find user data after login.");
       }
     } catch (error) {
-      Alert.alert('Login Failed', 'Please check your email and password and try again.');
+      Alert.alert('Login Failed', 'Please check your credentials and try again.');
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  // ... The rest of your JSX remains the same
   return (
     <SafeAreaView style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={() => navigation?.navigate('Welcome')}>
@@ -62,10 +74,20 @@ const LoginScreen = ({ navigation }) => {
         <View style={styles.card}>
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Sign in to continue</Text>
+          
+          {/* --- 5. Update the UI to reflect the change --- */}
           <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color="#888" style={styles.inputIcon} />
-            <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#666" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+            <Ionicons name="person-outline" size={20} color="#888" style={styles.inputIcon} />
+            <TextInput 
+                style={styles.input} 
+                placeholder="Email or Username" 
+                placeholderTextColor="#666" 
+                value={usernameOrEmail} 
+                onChangeText={setUsernameOrEmail} 
+                autoCapitalize="none"
+            />
           </View>
+
           <View style={styles.inputContainer}>
             <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
             <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#666" value={password} onChangeText={setPassword} secureTextEntry={!showPassword} />
@@ -85,7 +107,6 @@ const LoginScreen = ({ navigation }) => {
   );
 };
 
-// ... Your styles remain the same
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#121212', justifyContent: 'center', padding: 20 },
   backButton: { position: 'absolute', top: 50, left: 20, zIndex: 100, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 20, padding: 10 },

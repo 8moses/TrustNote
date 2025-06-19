@@ -21,8 +21,19 @@ const SignupScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  // --- THIS IS THE NEW FIX ---
+  // 1. Add state to control when autocomplete is ready.
+  const [isReadyForAutocomplete, setIsReadyForAutocomplete] = useState(false);
+
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+
+    // 2. After a short delay, we'll allow autocomplete to be enabled.
+    const timer = setTimeout(() => {
+      setIsReadyForAutocomplete(true);
+    }, 500); // 500ms delay gives the screen time to settle.
+
+    return () => clearTimeout(timer); // Clean up on unmount
   }, []);
 
   const handleSignUp = async () => {
@@ -70,6 +81,7 @@ const SignupScreen = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           <View style={styles.card}>
+            {/* The hiddenInput has been removed as it's not needed for this method */}
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>Join us today</Text>
             
@@ -85,7 +97,17 @@ const SignupScreen = ({ navigation }) => {
 
             <View style={styles.inputContainer}>
               <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
-              <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#666" value={password} onChangeText={setPassword} secureTextEntry={!showPassword}/>
+              <TextInput 
+                style={styles.input} 
+                placeholder="Password" 
+                placeholderTextColor="#666" 
+                value={password} 
+                onChangeText={setPassword} 
+                secureTextEntry={!showPassword}
+                // --- 3. The autoComplete prop is now conditional ---
+                autoComplete={isReadyForAutocomplete ? 'new-password' : 'off'}
+                textContentType="newPassword"
+              />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
                 <Ionicons name={showPassword ? "eye-outline" : "eye-off-outline"} size={20} color="#888" />
               </TouchableOpacity>
@@ -109,14 +131,12 @@ const SignupScreen = ({ navigation }) => {
             <TouchableOpacity style={[styles.createButton, loading && styles.createButtonDisabled]} onPress={handleSignUp} disabled={loading}>
               <Text style={styles.createButtonText}>{loading ? 'Creating...' : 'Create Account'}</Text>
             </TouchableOpacity>
-
-            {/* --- THIS IS THE CODE THAT HANDLES NAVIGATION TO THE LOGIN SCREEN --- */}
+            
             <TouchableOpacity style={styles.loginLink} onPress={() => navigation?.navigate('Login')}>
               <Text style={styles.loginLinkText}>
                 Already have an account? <Text style={styles.loginLinkHighlight}>Sign In</Text>
               </Text>
             </TouchableOpacity>
-            
           </View>
         </Animated.View>
       </ScrollView>
@@ -146,7 +166,8 @@ const styles = StyleSheet.create({
   createButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   loginLink: { alignItems: 'center' },
   loginLinkText: { fontSize: 14, color: '#888' },
-  loginLinkHighlight: { color: '#4CAF50', fontWeight: '600' }
+  loginLinkHighlight: { color: '#4CAF50', fontWeight: '600' },
+  // The hiddenInput style is no longer needed
 });
 
 export default SignupScreen;

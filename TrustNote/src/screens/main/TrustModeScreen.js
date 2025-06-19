@@ -1,25 +1,43 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { useSelector } from 'react-redux'; // 1. Import useSelector to get user data
 import Header from '../../components/common/Header';
 import Button from '../../components/common/Button';
+import { createGameRoom } from '../../services/firebase/firestore'; // 2. Import the new function
 
-// This is the screen component for the "Trust Mode" tab
 const TrustModeScreen = ({ navigation }) => {
-  // These functions will handle what happens when you press the header icons
+  // 3. Get the current user's profile from the Redux store
+  const currentUserProfile = useSelector((state) => state.auth.profile);
+
   const handleAddFriend = () => {
-    // --- THIS IS THE CHANGE ---
-    // This will navigate to the screen for adding new friends.
     navigation.navigate('AddFriend');
   };
 
   const handleOpenMenu = () => {
-    // This can now navigate to your actual Settings screen
     navigation.navigate('Settings');
+  };
+
+  // 4. Create a new handler function for the "Most Likely To" button
+  const handleStartMostLikelyTo = async () => {
+    if (!currentUserProfile) {
+      Alert.alert("Error", "Could not find your profile to start a game.");
+      return;
+    }
+    try {
+      // Create a new game room in Firestore and get its ID
+      const newRoomId = await createGameRoom(currentUserProfile);
+      if (newRoomId) {
+        // Navigate to the lobby, passing the new room's ID as a parameter
+        navigation.navigate('GameLobby', { roomId: newRoomId });
+      }
+    } catch (error) {
+        Alert.alert("Error", "Could not create a game room.");
+        console.error("Error creating game room:", error);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* This Header's buttons will now trigger navigation */}
       <Header onLeftPress={handleAddFriend} onRightPress={handleOpenMenu} />
       
       <View style={styles.content}>
@@ -36,7 +54,8 @@ const TrustModeScreen = ({ navigation }) => {
             title="Most likely to"
             style={styles.modeButton}
             textStyle={styles.modeButtonText}
-            onPress={() => console.log('Go to Most Likely To')}
+            // 5. Connect the button's onPress to our new handler
+            onPress={handleStartMostLikelyTo}
           />
           <Button
             title="Truth or Dare"

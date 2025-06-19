@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
-// --- FIX #1: Import the useFocusEffect hook ---
 import { useFocusEffect } from '@react-navigation/native';
 
-import { getPendingFriendRequestCount } from '../../services/firebase/firestore';
+// --- 1. Import the new getGameInvites function ---
+import { getPendingFriendRequestCount, getGameInvites } from '../../services/firebase/firestore';
 import { fetchThoughts } from '../../store/slices/socialSlice';
 import StickyNote from '../../components/social/StickyNote';
 import Button from '../../components/common/Button';
@@ -17,17 +17,22 @@ const HomeScreen = ({ navigation }) => {
   const { thoughts, status } = useSelector((state) => state.social);
   
   const [friendRequestCount, setFriendRequestCount] = useState(0);
+  // --- 2. Add new state for the game invite count ---
+  const [gameInviteCount, setGameInviteCount] = useState(0);
 
-  // --- FIX #2: Use useFocusEffect to refetch the count whenever the screen is focused ---
+  // --- 3. Update useFocusEffect to fetch BOTH counts ---
   useFocusEffect(
     useCallback(() => {
       if (user?.uid) {
+        // Fetch friend request count
         getPendingFriendRequestCount(user.uid).then(setFriendRequestCount);
+        // Fetch game invite count
+        getGameInvites(user.uid).then(invites => setGameInviteCount(invites.length));
       }
     }, [user])
   );
 
-  // This useEffect can now be dedicated to fetching thoughts
+  // This useEffect is still fine for fetching thoughts
   useEffect(() => {
     if (user?.uid && status === 'idle') {
         dispatch(fetchThoughts(user.uid));
@@ -57,11 +62,15 @@ const HomeScreen = ({ navigation }) => {
               <Text style={styles.statusText}>Friend Requests</Text>
             </TouchableOpacity>
 
-            <View style={styles.statusCard}>
-              <Ionicons name="help-circle-outline" size={32} color="#bfff7b" />
-              <Text style={styles.statusNumber}>1</Text>
-              <Text style={styles.statusText}>Daily Question</Text>
-            </View>
+            {/* --- 4. Replace the old "Daily Question" card with the new "Game Invites" card --- */}
+            <TouchableOpacity 
+              style={styles.statusCard}
+              onPress={() => navigation.navigate('GameInvites')}
+            >
+              <Ionicons name="game-controller-outline" size={32} color="#bfff7b" />
+              <Text style={styles.statusNumber}>{gameInviteCount}</Text>
+              <Text style={styles.statusText}>Game Invites</Text>
+            </TouchableOpacity>
           </View>
           
           <View style={styles.feedSection}>
